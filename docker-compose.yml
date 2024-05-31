@@ -1,0 +1,47 @@
+version: '3.5'
+
+services:
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-root}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-example123}
+    volumes:
+      - ./docker/mongo:/data/db
+    ports:
+      - '${MONGODB_FORWARD_PORT}:27017'
+    logging:
+      driver: "none"
+
+
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/node/Dockerfile
+    environment:
+      - PORT=${APP_PORT}
+    ports:
+      - '${APP_FORWARD_PORT}:${APP_PORT}'
+    depends_on:
+      - mongo
+      - redis
+    volumes:
+      - ./src:/app/src      
+
+  redis:
+    image: 'redis:alpine'
+    ports:
+        - '${FORWARD_REDIS_PORT:-6379}:6379'
+    volumes:
+        - 'sail-redis:/data'
+    healthcheck:
+        test:
+            - CMD
+            - redis-cli
+            - ping
+        retries: 3
+        timeout: 5s
+volumes:
+  sail-redis:
+    driver: local

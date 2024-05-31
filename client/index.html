@@ -1,0 +1,53 @@
+<html>
+  <head>
+    <script
+      src="https://cdn.socket.io/4.3.2/socket.io.min.js"
+      integrity="sha384-KAZ4DtjNhLChOB/hxXuKqhMLYvx3b5MlT55xPEiNmREKRzeEm+RVPlTnAn0ajQNs"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/rxjs/7.8.1/rxjs.umd.min.js"
+      integrity="sha512-D9LDs8YUUVa4V9Gl4Zb+xqRAc7RCzooR3+zzebgK2RMu/KU+dh90pbjEEMzPiSyRSGbSp9j1pZnrO4joGa5WEg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script>
+      const socket = io('http://localhost:15080', {
+        transports: ['websocket'],
+      });
+      socket.on('connect', function () {
+        console.log('Connected');
+
+        const { fromEvent, merge, map, throttleTime } = rxjs;
+        const mouseMove = fromEvent(document, 'mousemove');
+        const mouseClick = fromEvent(document, 'click');
+
+        const mouseEvents = merge(
+          mouseMove.pipe(throttleTime(100), map((e) => ({ type: 'move', x: e.clientX, y: e.clientY }))),
+          mouseClick.pipe(map((e) => ({ type: 'click', x: e.clientX, y: e.clientY }))),
+        );
+        const mouseSub = mouseEvents.subscribe((e) => {
+          console.log('mouse event', e);
+          socket.emit('mouse-event', e, (response) =>
+          console.log('Confirmed:', response),);
+        });
+
+        socket.emit('events', { test: 'test' });
+        socket.emit('identity', 0, (response) =>
+          console.log('Identity:', response),
+        );
+      });
+      socket.on('events', function (data) {
+        console.log('event', data);
+      });
+      socket.on('exception', function (data) {
+        console.log('event', data);
+      });
+      socket.on('disconnect', function () {
+        console.log('Disconnected');
+      });
+    </script>
+  </head>
+
+  <body></body>
+</html>
