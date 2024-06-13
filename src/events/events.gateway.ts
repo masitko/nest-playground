@@ -10,6 +10,7 @@ import { from, Observable } from 'rxjs';
 import { Server } from 'socket.io';
 import { map } from 'rxjs/operators';
 import { ConfigService } from '@nestjs/config';
+import { EventsService } from './events.service';
 
 import type { mouseEvent, mouseEventResponse } from './events.types';
 
@@ -22,13 +23,23 @@ export class EventsGateway {
   @WebSocketServer()
   server: Server;
 
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    private eventsService: EventsService,
+  ) {}
 
   @SubscribeMessage('mouse-event')
   async captureMouse(
     @MessageBody() data: mouseEvent,
   ): Promise<mouseEventResponse> {
     console.log(data);
+    this.eventsService.create({
+      x: data.x,
+      y: data.y,
+      type: data.type,
+      createdAt: new Date(),
+    });
+
     const response: mouseEventResponse = { ...data, status: 'received' };
     return response;
   }
